@@ -17,6 +17,7 @@ class FakeExtractor:
         return KeypointResult(
             hand_landmarks=[(0.1, 0.2, 0.3)],
             body_landmarks=[(0.4, 0.5, 0.6)],
+            frame_features=[[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]],
         )
 
 
@@ -64,19 +65,9 @@ def test_wlasl_classifier_with_onnx_session(monkeypatch, tmp_path):
 
     # inject fake session into classifier via provider creation
     extractor = FakeExtractor()
-    session = FakeONNXSession()
+    from unison_io_sign.wlasl_classifier import WLASLClassifier
 
-    # patch WLASLClassifier to return our fake session
-    from unison_io_sign import wlasl_classifier
-
-    orig_init = wlasl_classifier.WLASLClassifier.__init__
-
-    def _init(self, model_path, session=None):
-        orig_init(self, model_path, session=session or FakeONNXSession())
-
-    monkeypatch.setattr(wlasl_classifier.WLASLClassifier, "__init__", _init)
-
-    provider = ASLProvider(extractor=extractor)
+    provider = ASLProvider(extractor=extractor, classifier=WLASLClassifier(str(fake_model), session=FakeONNXSession()))
     segment = VideoSegment(frames=["frame"], metadata={})
     interp = provider.interpret_segment(segment)
     assert interp.text == "asl_wlasl_onnx" or interp.text == ""

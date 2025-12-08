@@ -38,8 +38,8 @@ class WLASLClassifier:
 
     def _keypoints_to_features(self, keypoints: KeypointResult) -> np.ndarray:
         """
-        Flatten (x, y, z) coordinates for hand + body landmarks into a 1D feature vector.
-        If no landmarks are available, return a single zero feature.
+        Flatten per-frame (x, y, z) coordinates into a single 2D feature tensor [1, N].
+        If frame_features are present, use them; otherwise flatten landmarks directly.
         """
 
         def _flatten_landmarks(landmarks: List[Any]) -> List[float]:
@@ -56,11 +56,13 @@ class WLASLClassifier:
                         continue
             return flat
 
-        flat = _flatten_landmarks(keypoints.hand_landmarks) + _flatten_landmarks(keypoints.body_landmarks)
+        if keypoints.frame_features:
+            flat = [coord for frame in keypoints.frame_features for coord in frame]
+        else:
+            flat = _flatten_landmarks(keypoints.hand_landmarks) + _flatten_landmarks(keypoints.body_landmarks)
         if not flat:
             flat = [0.0]
-        features = np.array([flat], dtype=np.float32)
-        return features
+        return np.array([flat], dtype=np.float32)
 
     def predict(self, keypoints: KeypointResult, hint_text: Optional[str] = None) -> Tuple[str, float, List[str]]:
         """
