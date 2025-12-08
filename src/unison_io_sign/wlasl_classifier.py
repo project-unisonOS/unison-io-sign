@@ -38,12 +38,29 @@ class WLASLClassifier:
 
     def _keypoints_to_features(self, keypoints: KeypointResult) -> np.ndarray:
         """
-        Simplistic feature builder: flatten counts to keep inference contract stable in tests.
-        Real implementation would flatten coordinates and confidence scores.
+        Flatten (x, y, z) coordinates for hand + body landmarks into a 1D feature vector.
+        If no landmarks are available, return a single zero feature.
         """
-        hands = len(keypoints.hand_landmarks)
-        bodies = len(keypoints.body_landmarks)
-        return np.array([[hands, bodies]], dtype=np.float32)
+
+        def _flatten_landmarks(landmarks: List[Any]) -> List[float]:
+            flat: List[float] = []
+            for lm in landmarks:
+                if hasattr(lm, "x") and hasattr(lm, "y") and hasattr(lm, "z"):
+                    flat.extend([float(lm.x), float(lm.y), float(lm.z)])
+                else:
+                    try:
+                        seq = list(lm)
+                        if len(seq) >= 3:
+                            flat.extend([float(seq[0]), float(seq[1]), float(seq[2])])
+                    except Exception:
+                        continue
+            return flat
+
+        flat = _flatten_landmarks(keypoints.hand_landmarks) + _flatten_landmarks(keypoints.body_landmarks)
+        if not flat:
+            flat = [0.0]
+        features = np.array([flat], dtype=np.float32)
+        return features
 
     def predict(self, keypoints: KeypointResult, hint_text: Optional[str] = None) -> Tuple[str, float, List[str]]:
         """
