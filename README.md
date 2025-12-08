@@ -35,3 +35,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 - Phase 3: avatar output adapter + shell hooks.
 - Phase 4: policy/consent integration and preferences.
 - Phase 5: perf tuning and multi-language readiness.
+
+## Actuation vs renderer
+- Expressive outputs (avatar signing, visualizations) stay on renderer/IO pathways.
+- Physical device actuation (robotic arms, haptic/sign hardware) should route through `unison-actuation` using the Action Envelope (`unison-docs/dev/specs/action-envelope.md`) for policy/consent enforcement.
