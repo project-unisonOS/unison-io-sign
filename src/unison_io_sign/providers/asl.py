@@ -22,8 +22,17 @@ class ASLProvider(SignLanguageProvider):
     """
 
     def __init__(self, extractor=None, classifier=None):
-        self.model_path = os.getenv("UNISON_ASL_MODEL_PATH")
-        self.backend = os.getenv("UNISON_ASL_KEYPOINT_BACKEND", "mediapipe")
+        language = os.getenv("UNISON_SIGN_LANGUAGE", "asl").lower()
+        # resolve model path with per-language override then generic fallback
+        lang_path = os.getenv(f"UNISON_SIGN_MODEL_PATH_{language.upper()}")
+        generic_path = os.getenv("UNISON_SIGN_MODEL_PATH")
+        self.model_path = lang_path or generic_path
+
+        # resolve backend with per-language override then generic fallback
+        lang_backend = os.getenv(f"UNISON_SIGN_KEYPOINT_BACKEND_{language.upper()}")
+        generic_backend = os.getenv("UNISON_SIGN_KEYPOINT_BACKEND", "mediapipe")
+        self.backend = lang_backend or generic_backend
+
         self.extractor = extractor
         self.classifier = classifier
         if self.model_path and self.classifier is None:
