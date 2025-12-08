@@ -18,12 +18,21 @@ class ASLProvider(SignLanguageProvider):
         return "asl"
 
     def interpret_segment(self, segment: VideoSegment) -> SignInterpretation:
-        # Placeholder interpretation; future: call model to fill text/intent/gloss.
+        """
+        Phase 2 stub:
+        - If a hint is present in segment.metadata, echo it as text.
+        - Otherwise return an empty text with low confidence.
+        """
+        hint_text = None
+        if segment.metadata:
+            hint_text = segment.metadata.get("text_hint")
+        text = hint_text or ""
+        confidence = 0.75 if hint_text else 0.2
         return SignInterpretation.from_stub(
             language=self.language_code,
-            text="",
+            text=text,
             intent=None,
-            confidence=0.0,
+            confidence=confidence,
             gloss=[],
             segment=segment,
         )

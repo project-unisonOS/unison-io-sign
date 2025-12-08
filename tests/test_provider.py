@@ -16,7 +16,7 @@ def test_asl_provider_output_schema():
     interp = provider.interpret_segment(segment)
     assert interp.language == "asl"
     assert interp.segment_id == segment.segment_id
-    assert interp.confidence == 0.0
+    assert interp.confidence == 0.2
     signing_output = provider.generate_output("Opening settings.")
     assert signing_output.language == "asl"
     assert signing_output.text == "Opening settings."

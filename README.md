@@ -29,7 +29,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 ## Roadmap (excerpt)
 - Phase 0: schemas, provider protocol, ASL stub, tests. ✅
 - Phase 1: presence detector + interpreter skeleton + integration tests. ✅ (current)
-- Phase 2: ASL provider MVP and replay tests.
+- Phase 2: ASL provider MVP and replay tests. ✅ (current stub uses text_hint metadata; replace with real model next)
 - Phase 3: avatar output adapter + shell hooks.
 - Phase 4: policy/consent integration and preferences.
 - Phase 5: perf tuning and multi-language readiness.
