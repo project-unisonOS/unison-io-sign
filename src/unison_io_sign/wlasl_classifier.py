@@ -5,7 +5,7 @@ WLASL classifier/translator wrapper using ONNX Runtime.
 from __future__ import annotations
 
 import os
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -18,9 +18,10 @@ except Exception:  # pragma: no cover - optional dependency in some environments
 
 
 class WLASLClassifier:
-    def __init__(self, model_path: str, session: Optional[Any] = None):
+    def __init__(self, model_path: str, session: Optional[Any] = None, labels_path: Optional[str] = None):
         self.model_path = model_path
         self.session = session or self._load_session(model_path)
+        self.labels = self._load_labels(labels_path)
 
     @property
     def loaded(self) -> bool:
@@ -35,6 +36,19 @@ class WLASLClassifier:
             return ort.InferenceSession(path, providers=["CPUExecutionProvider"])
         except Exception:
             return None
+
+    def _load_labels(self, labels_path: Optional[str]) -> Dict[int, Dict[str, Any]]:
+        if not labels_path or not os.path.exists(labels_path):
+            return {}
+        try:
+            import json
+
+            with open(labels_path, "r") as f:
+                data = json.load(f)
+            labels_list = data.get("labels", [])
+            return {int(item["id"]): {"text": item.get("text", ""), "gloss": item.get("gloss", [])} for item in labels_list}
+        except Exception:
+            return {}
 
     def _keypoints_to_features(self, keypoints: KeypointResult) -> np.ndarray:
         """
@@ -78,19 +92,28 @@ class WLASLClassifier:
         inputs = {self.session.get_inputs()[0].name: features}  # type: ignore[index]
         try:
             outputs = self.session.run(None, inputs)  # type: ignore[call-arg]
-            # Expect first output to be logits or probabilities; fallback if shape unexpected.
             scores = outputs[0].squeeze()
-            # For deterministic behavior in tests, derive text/gloss from hint or default.
             text = hint_text or "asl_wlasl_onnx"
-            gloss = ["ONNX"] if not hint_text else []
-            # Map confidence from model scores if possible.
+            gloss: List[str] = [] if hint_text else ["ONNX"]
+            confidence = 0.7
             try:
-                confidence = float(np.max(scores))
+                # If labels exist, compute argmax and map to text/gloss.
+                if isinstance(scores, np.ndarray) and scores.ndim >= 1:
+                    logits = scores
+                    # softmax
+                    exp_logits = np.exp(logits - np.max(logits))
+                    probs = exp_logits / np.sum(exp_logits)
+                    idx = int(np.argmax(probs))
+                    confidence = float(np.max(probs))
+                    if self.labels and idx in self.labels:
+                        text = self.labels[idx].get("text", text)
+                        gloss = self.labels[idx].get("gloss", gloss)
+                else:
+                    confidence = float(scores)
             except Exception:
-                confidence = 0.7
+                pass
             return text, confidence, gloss
         except Exception:
-            # Fallback if inference fails.
             text = hint_text or "asl_wlasl_stub"
             gloss = [] if hint_text else ["STUB"]
             confidence = 0.7

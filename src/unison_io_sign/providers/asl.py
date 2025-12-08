@@ -33,10 +33,15 @@ class ASLProvider(SignLanguageProvider):
         generic_backend = os.getenv("UNISON_SIGN_KEYPOINT_BACKEND", "mediapipe")
         self.backend = lang_backend or generic_backend
 
+        # resolve labels path with per-language override then generic fallback
+        lang_labels = os.getenv(f"UNISON_SIGN_LABELS_PATH_{language.upper()}")
+        generic_labels = os.getenv("UNISON_SIGN_LABELS_PATH")
+        self.labels_path = lang_labels or generic_labels
+
         self.extractor = extractor
         self.classifier = classifier
         if self.model_path and self.classifier is None:
-            self.classifier = WLASLClassifier(self.model_path)
+            self.classifier = WLASLClassifier(self.model_path, labels_path=self.labels_path)
         if self.extractor is None:
             self.extractor = make_extractor(self.backend)
 

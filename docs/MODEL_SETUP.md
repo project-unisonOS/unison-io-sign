@@ -11,6 +11,7 @@ This is the plan for wiring the ASL provider to a local model using keypoints �
 - `UNISON_SIGN_MODEL_PATH_<LANG>` → per-language checkpoint, e.g. `UNISON_SIGN_MODEL_PATH_ASL`.
 - `UNISON_SIGN_MODEL_PATH` → generic fallback if per-language is not set.
 - Optional: `UNISON_SIGN_KEYPOINT_BACKEND_<LANG>` or `UNISON_SIGN_KEYPOINT_BACKEND` → `mediapipe` (default target) or `mmpose`.
+- Optional: `UNISON_SIGN_LABELS_PATH_<LANG>` or `UNISON_SIGN_LABELS_PATH` → JSON label map for logits → text/gloss mapping.
 - GPU/accelerator recommended; CPU fallback allowed but slower.
 
 ## Installing runtime dependencies (dev)

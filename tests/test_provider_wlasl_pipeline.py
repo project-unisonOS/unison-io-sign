@@ -1,11 +1,14 @@
 from dataclasses import dataclass
+import json
+from pathlib import Path
 
 from unison_io_sign.providers.asl import ASLProvider
 from unison_io_sign.keypoints import KeypointResult
 from unison_io_sign.schemas import VideoSegment
 import numpy as np
-import onnx
-from onnx import helper, TensorProto
+from pathlib import Path
+
+FIXTURES = Path(__file__).parent / "fixtures" / "asl"
 
 
 @dataclass
@@ -44,74 +47,26 @@ def test_asl_provider_with_injected_model_and_extractor():
     assert interp.raw_gloss == ["OPEN", "SETTINGS"]
 
 
-class FakeONNXSession:
-    def __init__(self):
-        self._inputs = [type("I", (), {"name": "input"})]
+def test_wlasl_classifier_with_fixture(monkeypatch):
+    model_path = FIXTURES / "wlasl_stub.onnx"
+    labels_path = FIXTURES / "wlasl_labels.json"
+    keypoints_path = FIXTURES / "keypoints_open_settings.json"
 
-    def get_inputs(self):
-        return self._inputs
-
-    def run(self, _, inputs):
-        arr = inputs["input"]
-        # return a score vector using counts
-        score = float(np.sum(arr))
-        return [np.array([score], dtype=np.float32)]
-
-
-def test_wlasl_classifier_with_onnx_session(monkeypatch, tmp_path):
-    fake_model = tmp_path / "model.onnx"
-    fake_model.write_text("stub")
-    monkeypatch.setenv("UNISON_SIGN_MODEL_PATH_ASL", str(fake_model))
-
-    # inject fake session into classifier via provider creation
-    extractor = FakeExtractor()
-    from unison_io_sign.wlasl_classifier import WLASLClassifier
-
-    provider = ASLProvider(extractor=extractor, classifier=WLASLClassifier(str(fake_model), session=FakeONNXSession()))
-    segment = VideoSegment(frames=["frame"], metadata={})
-    interp = provider.interpret_segment(segment)
-    assert interp.text == "asl_wlasl_onnx" or interp.text == ""
-    assert interp.confidence >= 0.6
-
-
-def _build_tiny_onnx_model(path):
-    # Model: ReduceSum over axis=1 to produce a single score.
-    input_tensor = helper.make_tensor_value_info("input", TensorProto.FLOAT, ["batch", "features"])
-    output_tensor = helper.make_tensor_value_info("output", TensorProto.FLOAT, ["batch"])
-    axes_initializer = helper.make_tensor("axes", TensorProto.INT64, [1], [1])
-    node = helper.make_node("ReduceSum", inputs=["input", "axes"], outputs=["output"], keepdims=0)
-    graph = helper.make_graph([node], "sum_model", [input_tensor], [output_tensor], initializer=[axes_initializer])
-    model = helper.make_model(graph, producer_name="unison-io-sign-test", opset_imports=[helper.make_operatorsetid("", 13)])
-    onnx.save(model, path)
-
-
-def test_wlasl_classifier_end_to_end_with_real_onnx(tmp_path, monkeypatch):
-    model_path = tmp_path / "tiny.onnx"
-    _build_tiny_onnx_model(model_path)
     monkeypatch.setenv("UNISON_SIGN_MODEL_PATH_ASL", str(model_path))
+    monkeypatch.setenv("UNISON_SIGN_LABELS_PATH_ASL", str(labels_path))
 
-    # Fake extractor that emits coordinates
-    @dataclass
-    class Point:
-        x: float
-        y: float
-        z: float
+    data = json.loads(keypoints_path.read_text())
+    frames = data["frames"]
 
     @dataclass
     class Extractor:
-        def extract(self, frames):
-            return KeypointResult(
-                hand_landmarks=[Point(0.1, 0.2, 0.3), Point(0.4, 0.5, 0.6)],
-                body_landmarks=[Point(0.7, 0.8, 0.9)],
-            )
+        def extract(self, frames_in):
+            return KeypointResult(hand_landmarks=[], body_landmarks=[], frame_features=frames)
 
-    import onnxruntime as ort
-    from unison_io_sign.wlasl_classifier import WLASLClassifier
-
-    session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
-    provider = ASLProvider(extractor=Extractor(), classifier=WLASLClassifier(str(model_path), session=session))
+    provider = ASLProvider(extractor=Extractor())
     segment = VideoSegment(frames=["frame"], metadata={})
     interp = provider.interpret_segment(segment)
-    # With actual ONNX run, we get the default text and a confidence derived from sum of coords.
-    assert interp.text in {"asl_wlasl_onnx", ""}
+    # Expect class id 1 from the stub logits (0.1, 0.9)
+    assert interp.text == "open browser"
+    assert interp.raw_gloss == ["OPEN", "BROWSER"]
     assert interp.confidence >= 0.6
