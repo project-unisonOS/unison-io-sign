@@ -13,6 +13,7 @@ Phase 0 scaffolding — schemas, provider interface, ASL provider stub, and test
 - `src/unison_io_sign/interpreter.py` — segmentation + provider wiring skeleton.
 - `tests/` — unit tests for schema serialization and provider contracts.
 - `docs/MODEL_SETUP.md` — plan for wiring MediaPipe + WLASL model locally.
+- `docs/REAL_MODEL_TODO.md` — drop-in guide for plugging a real ASL ONNX model + labels.
 
 Planned additions:
 - `unison_io_sign_detector` — lightweight sign presence detection.
