@@ -26,7 +26,14 @@ def test_asl_provider_model_path_with_file_uses_model(tmp_path, monkeypatch):
     fake_model = tmp_path / "model.pt"
     fake_model.write_text("stub")
     monkeypatch.setenv("UNISON_SIGN_MODEL_PATH_ASL", str(fake_model))
-    provider = ASLProvider()
+    # Inject a fake classifier that reports loaded and returns high confidence
+    class FakeLoadedClassifier:
+        loaded = True
+
+        def predict(self, keypoints, hint_text=None):
+            return hint_text or "from_model", 0.9, ["OPEN"]
+
+    provider = ASLProvider(classifier=FakeLoadedClassifier())
     segment = VideoSegment()
     interp = provider.interpret_segment(segment)
     # With model loaded, confidence is elevated

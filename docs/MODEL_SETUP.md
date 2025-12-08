@@ -15,7 +15,7 @@ This is the plan for wiring the ASL provider to a local model using keypoints â†
 
 ## Installing runtime dependencies (dev)
 ```bash
-pip install mediapipe torch  # or torch+cuda if available
+pip install mediapipe onnxruntime numpy  # or onnxruntime-gpu if available
 # optional alternative:
 # pip install mmpose mmengine torch torchvision
 ```
@@ -23,7 +23,7 @@ pip install mediapipe torch  # or torch+cuda if available
 ## Wiring plan
 - Update `ASLProvider` to:
   - Load a keypoint extractor (MediaPipe or MMPose).
-  - Load the WLASL classifier/translator from `UNISON_ASL_MODEL_PATH`.
+  - Load the WLASL classifier/translator from `UNISON_SIGN_MODEL_PATH_<LANG>` (ONNX via onnxruntime).
   - Run keypoints â†’ gloss/text/intent hints.
 - Add replay fixtures:
   - Precomputed keypoints for a few commands (e.g., OPEN_SETTINGS, OPEN_APP).
