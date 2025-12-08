@@ -9,6 +9,8 @@ Phase 0 scaffolding — schemas, provider interface, ASL provider stub, and test
 - `src/unison_io_sign/schemas.py` — shared dataclasses for presence, interpretation, signing output.
 - `src/unison_io_sign/provider.py` — `SignLanguageProvider` protocol and provider registry helper.
 - `src/unison_io_sign/providers/asl.py` — ASL provider stub implementing the protocol.
+- `src/unison_io_sign/detector.py` — lightweight presence detector skeleton.
+- `src/unison_io_sign/interpreter.py` — segmentation + provider wiring skeleton.
 - `tests/` — unit tests for schema serialization and provider contracts.
 
 Planned additions:
@@ -26,7 +28,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 
 ## Roadmap (excerpt)
 - Phase 0: schemas, provider protocol, ASL stub, tests. ✅
-- Phase 1: presence detector + interpreter skeleton + integration tests.
+- Phase 1: presence detector + interpreter skeleton + integration tests. ✅ (current)
 - Phase 2: ASL provider MVP and replay tests.
 - Phase 3: avatar output adapter + shell hooks.
 - Phase 4: policy/consent integration and preferences.

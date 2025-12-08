@@ -6,6 +6,8 @@ from .schemas import (
     VideoSegment,
 )
 from .provider import SignLanguageProvider, register_provider, get_provider
+from .detector import SignPresenceDetector, DetectionConfig
+from .interpreter import SignInterpreter, InterpreterConfig
 
 __all__ = [
     "AvatarInstructions",
@@ -16,4 +18,8 @@ __all__ = [
     "SignLanguageProvider",
     "register_provider",
     "get_provider",
+    "SignPresenceDetector",
+    "DetectionConfig",
+    "SignInterpreter",
+    "InterpreterConfig",
 ]
