@@ -19,3 +19,15 @@ def test_asl_provider_model_path_without_file_falls_back(monkeypatch, tmp_path):
     interp = provider.interpret_segment(segment)
     # Falls back to low-confidence path
     assert interp.confidence == 0.2
+
+
+def test_asl_provider_model_path_with_file_uses_model(tmp_path, monkeypatch):
+    # create a fake model file so loader marks as available
+    fake_model = tmp_path / "model.pt"
+    fake_model.write_text("stub")
+    monkeypatch.setenv("UNISON_ASL_MODEL_PATH", str(fake_model))
+    provider = ASLProvider()
+    segment = VideoSegment()
+    interp = provider.interpret_segment(segment)
+    # With model loaded, confidence is elevated
+    assert interp.confidence >= 0.6

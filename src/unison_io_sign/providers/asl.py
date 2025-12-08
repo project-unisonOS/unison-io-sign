@@ -5,6 +5,8 @@ from typing import List, Optional
 
 from ..provider import SignLanguageProvider
 from ..schemas import SignInterpretation, SigningOutput, VideoSegment, AvatarInstructions
+from ..keypoints import make_extractor, KeypointResult
+from ..wlasl_classifier import WLASLClassifier
 
 
 class ASLProvider(SignLanguageProvider):
@@ -19,11 +21,15 @@ class ASLProvider(SignLanguageProvider):
     Later revisions will load a real local model (keypoints → gloss/text/intent).
     """
 
-    def __init__(self):
+    def __init__(self, extractor=None, classifier=None):
         self.model_path = os.getenv("UNISON_ASL_MODEL_PATH")
-        self._model_loaded = False
-        if self.model_path:
-            self._model_loaded = self._load_model(self.model_path)
+        self.backend = os.getenv("UNISON_ASL_KEYPOINT_BACKEND", "mediapipe")
+        self.extractor = extractor
+        self.classifier = classifier
+        if self.model_path and self.classifier is None:
+            self.classifier = WLASLClassifier(self.model_path)
+        if self.extractor is None:
+            self.extractor = make_extractor(self.backend)
 
     @property
     def language_code(self) -> str:
@@ -31,7 +37,7 @@ class ASLProvider(SignLanguageProvider):
 
     def interpret_segment(self, segment: VideoSegment) -> SignInterpretation:
         hint_text = segment.metadata.get("text_hint") if segment.metadata else None
-        if self._model_loaded:
+        if self._can_run_model():
             return self._infer_with_model(segment, hint_text=hint_text)
 
         text = hint_text or ""
@@ -53,32 +59,22 @@ class ASLProvider(SignLanguageProvider):
             avatar_instructions=AvatarInstructions(),
         )
 
-    def _load_model(self, path: str) -> bool:
-        """
-        Placeholder loader for WLASL-based classifier/translator.
-        Future: load a Torch/Mediapipe pipeline from `path`.
-        """
-        try:
-            # In this stub, just verify the path exists.
-            if os.path.exists(path):
-                return True
-        except Exception:
-            return False
-        return False
+    def _can_run_model(self) -> bool:
+        return bool(self.classifier) and getattr(self.classifier, "loaded", False)
 
     def _infer_with_model(self, segment: VideoSegment, hint_text: Optional[str] = None) -> SignInterpretation:
         """
         Placeholder model inference.
         Future: run keypoint/pose → gloss/text model.
         """
-        # For now, fall back to hint or empty string but mark confidence higher when model is "loaded".
-        text = hint_text or ""
-        confidence = 0.88 if text else 0.6
+        frames = segment.frames or []
+        keypoints: KeypointResult = self.extractor.extract(frames) if self.extractor else KeypointResult([], [])
+        text, confidence, gloss = self.classifier.predict(keypoints, hint_text=hint_text)  # type: ignore
         return SignInterpretation.from_stub(
             language=self.language_code,
             text=text,
             intent=None,
             confidence=confidence,
-            gloss=[],
+            gloss=gloss,
             segment=segment,
         )
