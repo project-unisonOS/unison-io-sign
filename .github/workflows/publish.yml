@@ -1,9 +1,7 @@
 name: Publish container
 
 on:
-  push:
-    branches: [ main, "release/**" ]
-    tags: [ "v*" ]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -12,6 +10,7 @@ permissions:
 
 jobs:
   publish:
+    if: false
     uses: project-unisonOS/unison-platform/.github/workflows/reusable-build.yml@main
     with:
       image_name: unison-io-sign
