@@ -12,8 +12,7 @@ Phase 0 scaffolding — schemas, provider interface, ASL provider stub, and test
 - `src/unison_io_sign/detector.py` — lightweight presence detector skeleton.
 - `src/unison_io_sign/interpreter.py` — segmentation + provider wiring skeleton.
 - `tests/` — unit tests for schema serialization and provider contracts.
-- `docs/MODEL_SETUP.md` — plan for wiring MediaPipe + WLASL model locally.
-- `docs/REAL_MODEL_TODO.md` — drop-in guide for plugging a real ASL ONNX model + labels.
+Model integration docs are intentionally kept minimal until the runtime server + real model path are implemented.
 
 Planned additions:
 - `unison_io_sign_detector` — lightweight sign presence detection.
@@ -27,14 +26,6 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest
 ```
-
-## Roadmap (excerpt)
-- Phase 0: schemas, provider protocol, ASL stub, tests. ✅
-- Phase 1: presence detector + interpreter skeleton + integration tests. ✅ (current)
-- Phase 2: ASL provider MVP and replay tests. ✅ (current stub uses text_hint or optional UNISON_ASL_MODEL_PATH placeholder; real model next)
-- Phase 3: avatar output adapter + shell hooks.
-- Phase 4: policy/consent integration and preferences.
-- Phase 5: perf tuning and multi-language readiness.
 
 ## Actuation vs renderer
 - Expressive outputs (avatar signing, visualizations) stay on renderer/IO pathways.
